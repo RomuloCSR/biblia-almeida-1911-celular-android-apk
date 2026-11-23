@@ -25,3 +25,10 @@ Aplicativo Android nativo, leve e **100% offline**, desenvolvido com motor de pr
 ## Contribuições e Licença
 
 Projeto de código aberto mantido por **@RomuloCSR** (`https://github.com/RomuloCSR`) com o propósito de oferecer acesso livre, gratuito e fiel às Escrituras em dispositivos móveis.
+
+🤝 Apoie esta Obra
+Autor: Romulo CSR (github.com/RomuloCSR)
+
+Contribuição espontânea via PIX: 21980934118
+
+Licença do texto bíblico: Domínio Público (Almeida Revista e Corrigida 1911).
