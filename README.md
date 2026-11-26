@@ -4,6 +4,8 @@
 
 **Gratuito • Sem anúncios • Funciona sem internet • Sempre a versão mais nova**
 
+<img src="docs/tela-celular.png" alt="Tela do aplicativo no celular" width="300">
+
 Ou aponte a câmera do celular para o código abaixo:
 
 <img src="docs/qr-baixar-apk.png" alt="QR code para baixar o aplicativo" width="200">
