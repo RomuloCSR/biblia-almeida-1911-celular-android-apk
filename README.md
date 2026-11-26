@@ -1,5 +1,29 @@
 # Bíblia Almeida ARC-1911 (Edição 11/2026) — Android
 
+## 📥 [BAIXAR O APLICATIVO (toque aqui)](https://github.com/RomuloCSR/biblia-almeida-1911-celular-android-apk/releases/latest/download/BibliaAlmeida1911.apk)
+
+**Gratuito • Sem anúncios • Funciona sem internet • Sempre a versão mais nova**
+
+Ou aponte a câmera do celular para o código abaixo:
+
+<img src="docs/qr-baixar-apk.png" alt="QR code para baixar o aplicativo" width="200">
+
+**Instalar em 3 passos:**
+
+1. Toque em **BAIXAR O APLICATIVO** acima (ou leia o QR code). O arquivo `BibliaAlmeida1911.apk` será baixado.
+2. Abra o arquivo baixado (pela notificação ou pela pasta *Downloads*).
+3. Se o Android pedir, toque em **Configurações** → **Permitir desta fonte** → **Instalar**.
+
+> Já tem o aplicativo? É só baixar e instalar de novo por cima. Não precisa desinstalar.
+
+**Compartilhe com quem precisa:** copie e envie este link pelo WhatsApp:
+
+```
+https://github.com/RomuloCSR/biblia-almeida-1911-celular-android-apk/releases/latest/download/BibliaAlmeida1911.apk
+```
+
+---
+
 Aplicativo Android nativo, leve e **100% offline**, desenvolvido com motor de processamento e atualização ortográfica em **linguagem C pura** (`motor.biblia.c`) integrado via JNI a uma interface limpa em **Kotlin** .
 
 > **Nota editorial:** O conteúdo está em processo contínuo de atualização e pode eventualmente apresentar pequenas falhas ortográficas ou gramaticais. Colabore nos enviando seu feedback pela aba **Issues** deste repositório. Obrigado!   
@@ -13,7 +37,7 @@ Aplicativo Android nativo, leve e **100% offline**, desenvolvido com motor de pr
 
 ## Instalação Direta no Android (.APK)
 
-1. Acesse a aba **[Releases](https://github.com/RomuloCSR/biblia-almeida-1911-android/releases)** na lateral direita desta página (ou abra a pasta `releases/BibliaAlmeida1911.apk` neste repositório) e baixe o arquivo **`BibliaAlmeida1911.apk`** no seu celular  .
+1. Toque no link **[BAIXAR O APLICATIVO](https://github.com/RomuloCSR/biblia-almeida-1911-celular-android-apk/releases/latest/download/BibliaAlmeida1911.apk)** no seu celular. O arquivo **`BibliaAlmeida1911.apk`** é baixado direto, sempre na versão mais nova. (As versões anteriores ficam na aba **[Releases](https://github.com/RomuloCSR/biblia-almeida-1911-celular-android-apk/releases)**.)
 2. Toque no arquivo baixado na barra de notificações ou na pasta *Downloads* do seu smartphone Android .
 3. Caso o Android solicite permissão para instalar aplicativos fora da Play Store, toque em **Configurações**, ative **Permitir desta fonte** e confirme em **Instalar** (ou **Instalar assim mesmo**, caso o Google Play Protect exiba o aviso padrão de aplicativo independente).
 
@@ -21,7 +45,7 @@ Aplicativo Android nativo, leve e **100% offline**, desenvolvido com motor de pr
 
 **Sim, 100% seguro.** Este é um projeto independente, gratuito e sem fins lucrativos, publicado em código aberto no **GitHub** (plataforma de referência mundial utilizada por desenvolvedores)   .
 
-* **Por que o Android exibe alerta ao instalar um arquivo `.apk`?** Sistemas operacionais modernos (Android, Windows, macOS e iOS) emitem avisos preventivos para qualquer aplicativo que não possua um certificado comercial pago nem esteja publicado nas lojas oficiais (Google Play, Microsoft Store ou App Store)   .
+* **Por que o Android exibe alerta ao instalar um arquivo `.apk`?** O Android emite um aviso preventivo para qualquer aplicativo que não esteja publicado na loja oficial (Google Play). É um aviso padrão, e não significa que o aplicativo tenha problema.
 * **Transparência total (Código Aberto):** Todo o código-fonte deste aplicativo (`motor.biblia.c`, `native-lib.cpp`, `MainActivity.kt`) e os textos dos 66 livros estão abertos e visíveis nesta página  . Qualquer técnico ou programador pode inspecionar o código e confirmar que não há coleta de dados, rastreamento ou arquivos maliciosos   .
 
 ## Estrutura do Projeto
