@@ -54,7 +54,8 @@ class MainActivity : AppCompatActivity() {
                     "• Funcionamento 100% offline com os 66 livros.\n" +
                     "• Motor nativo de alta velocidade em linguagem C.\n\n" +
                     "Projeto aberto e contribuições:\n" +
-                    "github.com/RomuloCSR"
+                    "github.com/RomuloCSR\n\n" +
+                    PIX
 
             AlertDialog.Builder(this)
                 .setTitle("Sobre o Projeto")
@@ -159,7 +160,8 @@ class MainActivity : AppCompatActivity() {
             val assinatura = "—\n" +
                     "Bíblia Almeida ARC-1911\n" +
                     "Atualização ortográfica e gramatical • Edição 11/2026\n" +
-                    "Projeto aberto: https://github.com/RomuloCSR"
+                    "Projeto aberto: https://github.com/RomuloCSR\n" +
+                    PIX
             val textoParaEnviar = "${tvTituloCapitulo.text}\n\n${tvTextoBiblico.text}$assinatura"
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
@@ -196,6 +198,10 @@ class MainActivity : AppCompatActivity() {
     ): String
 
     companion object {
+        /* Doação (28/11/2026): última linha do "Sobre" e de todo texto compartilhado. */
+        private const val PIX = "Doação espontânea para a obra via PIX: 21980934118"
+
+        /* Biblioteca nativa: ponte JNI + kernel da Bíblia (veja cpp/CMakeLists.txt). */
         init {
             System.loadLibrary("biblia1911")
         }
