@@ -1,57 +1,99 @@
+/* =============================================================================
+ * native-lib.cpp — ponte JNI entre o app Android (MainActivity.kt) e o kernel C
+ *
+ * O que faz: entrega ao Kotlin a lista de livros, o total de capítulos e o texto
+ *            de um capítulo, já com a ortografia atualizada.
+ * Por quê:   desde 28/11/2026 o app usa o kernel da Bíblia (pasta kernel/), o mesmo
+ *            texto do motor.biblia.c, cerca de 12 vezes mais rápido. Antes havia aqui
+ *            uma cópia própria do motor e do laço de leitura.
+ * Fonte:     kernel/biblia_kernel.h (API 1.0). As regras de ortografia são editadas
+ *            no motor.biblia.c e o kernel é gerado de novo (veja kernel/LEIAME.md).
+ * Regra:     os arquivos .md (assets/) nunca são alterados; só lidos.
+ * ============================================================================= */
 #include <jni.h>
 #include <string>
 #include <vector>
-#include <cstring>
 #include <cstdio>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
-extern "C" {
-    extern const char *pastas_at[39];
-    extern const char *pastas_nt[27];
-    extern const char *nomes_at[39];
-    extern const char *nomes_nt[27];
-    extern const int capitulos_at[39];
-    extern const int capitulos_nt[27];
+#include "kernel/biblia_kernel.h"
 
-    void limpar_texto_verso(const char *origem, char *destino);
-    void atualizar_ortografia(char *texto);
+/* ---------------------------------------------------------------------------
+ * 1. TESTAMENTO + ÍNDICE  ->  LIVRO DO KERNEL
+ *    O Kotlin conta os livros por testamento (AT 0..38, NT 0..26).
+ *    O kernel conta de 0 a 65 (0..38 = AT, 39..65 = NT).
+ *    Devolve -1 se o pedido estiver fora da faixa.
+ * --------------------------------------------------------------------------- */
+static int livro_kernel(jint testamento, jint indice) {
+    if (testamento == 1 && indice >= 0 && indice < 39) return (int)indice;
+    if (testamento == 2 && indice >= 0 && indice < 27) return 39 + (int)indice;
+    return -1;
 }
 
-#define MAX_LINHA_JNI 8192
-
+/* ---------------------------------------------------------------------------
+ * 2. LISTA DE LIVROS DE UM TESTAMENTO ("Gênesis" ... ou "Mateus" ...)
+ * --------------------------------------------------------------------------- */
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_br_com_romulocsr_biblia1911_MainActivity_obterListaLivrosJNI(
         JNIEnv *env,
         jobject /* this */,
         jint testamento) {
     int total = (testamento == 1) ? 39 : 27;
-    const char **nomes = (testamento == 1) ? nomes_at : nomes_nt;
+    int primeiro = (testamento == 1) ? 0 : 39;
 
     jclass stringClass = env->FindClass("java/lang/String");
     jobjectArray resultado = env->NewObjectArray(total, stringClass, env->NewStringUTF(""));
 
     for (int i = 0; i < total; i++) {
-        env->SetObjectArrayElement(resultado, i, env->NewStringUTF(nomes[i]));
+        const char *nome = bk_livro_nome(primeiro + i);
+        env->SetObjectArrayElement(resultado, i, env->NewStringUTF(nome ? nome : ""));
     }
     return resultado;
 }
 
+/* ---------------------------------------------------------------------------
+ * 3. TOTAL DE CAPÍTULOS DE UM LIVRO (0 se o livro não existe)
+ * --------------------------------------------------------------------------- */
 extern "C" JNIEXPORT jint JNICALL
 Java_br_com_romulocsr_biblia1911_MainActivity_obterTotalCapitulosJNI(
         JNIEnv *env,
         jobject /* this */,
         jint testamento,
         jint indiceLivro) {
-    if (testamento == 1 && indiceLivro >= 0 && indiceLivro < 39) {
-        return capitulos_at[indiceLivro];
-    }
-    if (testamento == 2 && indiceLivro >= 0 && indiceLivro < 27) {
-        return capitulos_nt[indiceLivro];
-    }
-    return 0;
+    int livro = livro_kernel(testamento, indiceLivro);
+    if (livro < 0) return 0;
+    int caps = bk_livro_capitulos(livro);
+    return (caps > 0) ? caps : 0;
 }
 
+/* ---------------------------------------------------------------------------
+ * 4. MONTAGEM DO TEXTO DO CAPÍTULO
+ *    O kernel chama esta função para cada item, na ordem do arquivo.
+ *    Verso:     "[12] texto"     Subtítulo: "(texto)"
+ *    Cada item termina com uma linha em branco (mesmo visual de antes).
+ * --------------------------------------------------------------------------- */
+static int item_texto(void *ctx, int tipo, int numero, const char *texto, size_t tamanho_texto) {
+    std::string *saida = static_cast<std::string *>(ctx);
+    if (tipo == BK_VERSO) {
+        char num[16];
+        snprintf(num, sizeof(num), "[%d] ", numero);
+        *saida += num;
+        saida->append(texto, tamanho_texto);
+    } else {
+        *saida += "(";
+        saida->append(texto, tamanho_texto);
+        *saida += ")";
+    }
+    *saida += "\n\n";
+    return 0; /* 0 = continuar */
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. LEITURA DE UM CAPÍTULO
+ *    Abre o .md dentro do APK (assets), tentando "01.md" e depois "001.md"
+ *    (Salmos), entrega o conteúdo ao kernel e devolve o texto pronto.
+ * --------------------------------------------------------------------------- */
 extern "C" JNIEXPORT jstring JNICALL
 Java_br_com_romulocsr_biblia1911_MainActivity_lerCapituloJNI(
         JNIEnv *env,
@@ -65,92 +107,36 @@ Java_br_com_romulocsr_biblia1911_MainActivity_lerCapituloJNI(
         return env->NewStringUTF("Erro interno: AssetManager indisponível.");
     }
 
-    const char *pasta = nullptr;
-    if (testamento == 1 && indiceLivro >= 0 && indiceLivro < 39) {
-        pasta = pastas_at[indiceLivro];
-    } else if (testamento == 2 && indiceLivro >= 0 && indiceLivro < 27) {
-        pasta = pastas_nt[indiceLivro];
-    } else {
+    int livro = livro_kernel(testamento, indiceLivro);
+    if (livro < 0) {
         return env->NewStringUTF("Livro inválido.");
     }
 
-    char caminho[256];
-    snprintf(caminho, sizeof(caminho), "%s/%02d.md", pasta, capitulo);
-    AAsset *asset = AAssetManager_open(mgr, caminho, AASSET_MODE_BUFFER);
-
-    if (asset == nullptr) {
-        snprintf(caminho, sizeof(caminho), "%s/%03d.md", pasta, capitulo);
+    /* 5.1 Abre o arquivo do capítulo (duas formas de nome) */
+    char caminho[256] = "";
+    AAsset *asset = nullptr;
+    for (int tentativa = 0; tentativa < 2 && asset == nullptr; tentativa++) {
+        if (bk_caminho_capitulo(livro, (int)capitulo, tentativa, caminho, sizeof(caminho)) < 0) {
+            return env->NewStringUTF("Capítulo inválido.");
+        }
         asset = AAssetManager_open(mgr, caminho, AASSET_MODE_BUFFER);
     }
-
     if (asset == nullptr) {
         std::string msg = "Não foi possível abrir o arquivo: " + std::string(caminho);
         return env->NewStringUTF(msg.c_str());
     }
 
+    /* 5.2 Copia o conteúdo para a memória e fecha o arquivo */
     off_t tamanho = AAsset_getLength(asset);
-    std::vector<char> conteudo(tamanho + 1, '\0');
-    AAsset_read(asset, conteudo.data(), tamanho);
+    std::vector<char> conteudo((size_t)tamanho + 1, '\0');
+    int lidos = AAsset_read(asset, conteudo.data(), (size_t)tamanho);
     AAsset_close(asset);
+    if (lidos < 0) lidos = 0;
 
+    /* 5.3 O kernel limpa o Markdown e atualiza a ortografia de cada item */
     std::string saida;
-    saida.reserve(tamanho + 2048);
-
-    char linha[MAX_LINHA_JNI];
-    char texto_limpo[MAX_LINHA_JNI];
-
-    const char *cursor = conteudo.data();
-    while (*cursor != '\0') {
-        const char *fim_linha = strchr(cursor, '\n');
-        size_t len = (fim_linha != nullptr) ? (size_t)(fim_linha - cursor) : strlen(cursor);
-        if (len >= MAX_LINHA_JNI - 1) len = MAX_LINHA_JNI - 2;
-
-        memcpy(linha, cursor, len);
-        linha[len] = '\0';
-
-        cursor = (fim_linha != nullptr) ? (fim_linha + 1) : (cursor + len);
-
-        if (strncmp(linha, "---", 3) == 0) {
-            break;
-        }
-        if (linha[0] == '#' || linha[0] == '[') {
-            continue;
-        }
-
-        int idx = 0;
-        while (linha[idx] == '*' || linha[idx] == ' ') {
-            idx++;
-        }
-
-        if (linha[idx] >= '1' && linha[idx] <= '9') {
-            char versiculo_num[20];
-            int v_pos = 0;
-            while (linha[idx] >= '0' && linha[idx] <= '9' && v_pos < 19) {
-                versiculo_num[v_pos++] = linha[idx++];
-            }
-            versiculo_num[v_pos] = '\0';
-
-            while (linha[idx] == '*' || linha[idx] == ' ') {
-                idx++;
-            }
-
-            limpar_texto_verso(&linha[idx], texto_limpo);
-            atualizar_ortografia(texto_limpo);
-
-            saida += "[";
-            saida += versiculo_num;
-            saida += "] ";
-            saida += texto_limpo;
-            saida += "\n\n";
-        } else if (strncmp(linha, "**", 2) == 0 && linha[idx] != '\0' && linha[idx] != '\n' && linha[idx] != '\r') {
-            limpar_texto_verso(&linha[idx], texto_limpo);
-            atualizar_ortografia(texto_limpo);
-
-            saida += "(";
-            saida += texto_limpo;
-            saida += ")\n\n";
-        }
-    }
+    saida.reserve((size_t)lidos + 2048);
+    bk_capitulo(conteudo.data(), (size_t)lidos, item_texto, &saida);
 
     return env->NewStringUTF(saida.c_str());
 }
